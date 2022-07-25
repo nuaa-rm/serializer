@@ -32,9 +32,15 @@ void PP_CONCAT(STACK_DEINIT_, CTX)(STACK(CTX)* _in) {                           
 }                                                                               \
 PP_IF(MACROMAGIC_SERIALIZE_H,                                                   \
 void PP_CONCAT(SERIALIZE_, STACK(CTX))(STACK(CTX)* _in, uint8_t* buf, int* n) { \
-    SERIALIZE(int)(_in->n, buf, n);                                             \
+    SERIALIZE(int)(&(_in->n), buf, n);                                          \
     for(int i = 0; i < _in->n; i++) {                                           \
-        SERIALIZE(CTX)(_in->data[i], buf, n);                                   \
+        SERIALIZE(CTX)(_in->data + i, buf, n);                                  \
+    }                                                                           \
+}                                                                               \
+void PP_CONCAT(DESERIALIZE_, STACK(CTX))(STACK(CTX)* _in, uint8_t* buf, int* n){\
+    DESERIALIZE(int)(&(_in->n), buf, n);                                        \
+    for(int i = 0; i < _in->n; i++) {                                           \
+        DESERIALIZE(CTX)(_in->data + i, buf, n);                                \
     }                                                                           \
 },)                                                                             \
 void PP_CONCAT(STACK_INSERT_, CTX)(STACK(CTX)* _in, int n, CTX obj) {           \

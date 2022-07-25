@@ -7,6 +7,7 @@ STACK_DEF(uint8_t)
 typedef struct {
     int a;
     float b;
+    char* c;
 } test;
 SERIALIZE_DEF(test, (int, a), (float, b));
 STACK_DEF(test)

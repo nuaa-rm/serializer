@@ -3,8 +3,8 @@
 
 typedef struct {
     int a;
-    int c;
-    float b;
+    char c;
+    int b;
 } test;
 
 SERIALIZE_DEF(test, a, b)

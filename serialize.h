@@ -15,22 +15,33 @@ typedef unsigned long int uint64_t;
 
 
 #define PP_REMOVE_PARENS(T) PP_REMOVE_PARENS_IMPL T
+#define PP_REMOVE_PARENS2(T) PP_REMOVE_PARENS_IMPL2 T
 
 
 #ifndef __cplusplus
 
 #include <string.h>
-#define PP_REMOVE_PARENS_IMPL(...) PP_CONCAT(SERIALIZE_, PP_GET_N(0, __VA_ARGS__))(_in.PP_GET_N(1, __VA_ARGS__)
+#define PP_REMOVE_PARENS_IMPL(...) PP_CONCAT(SERIALIZE_, PP_GET_N(0, __VA_ARGS__))(&_in->PP_GET_N(1, __VA_ARGS__)
 #define DO_EACH(VAR, IDX) PP_REMOVE_PARENS(VAR), buf, n);
-#define SERIALIZE_DEF(CTX, ...) void PP_CONCAT(SERIALIZE_, CTX)(CTX _in, uint8_t* buf, int* n) { \
+#define PP_REMOVE_PARENS_IMPL2(...) PP_CONCAT(DESERIALIZE_, PP_GET_N(0, __VA_ARGS__))(&_in->PP_GET_N(1, __VA_ARGS__)
+#define DO_EACH2(VAR, IDX) PP_REMOVE_PARENS2(VAR), buf, n);
+#define SERIALIZE_DEF(CTX, ...) void PP_CONCAT(SERIALIZE_, CTX)(CTX* _in, uint8_t* buf, int* n) {\
     PP_FOR_EACH(DO_EACH, __VA_ARGS__)                                                            \
+}                                                                                                \
+void PP_CONCAT(DESERIALIZE_, CTX)(CTX* _in, uint8_t* buf, int* n) {                              \
+    PP_FOR_EACH(DO_EACH2, __VA_ARGS__)                                                           \
 }
 
-#define SERIALIZE_OBJ_DEF(CTX) void PP_CONCAT(SERIALIZE_, CTX)(CTX _in, uint8_t* buf, int* n) { \
-    memcpy(buf + *n, &_in, sizeof(CTX));                                                        \
+#define SERIALIZE_OBJ_DEF(CTX) void PP_CONCAT(SERIALIZE_, CTX)(CTX* _in, uint8_t* buf, int* n) {\
+    memcpy(buf + *n, _in, sizeof(CTX));                                                         \
+    *n += sizeof(CTX);                                                                          \
+}                                                                                               \
+void PP_CONCAT(DESERIALIZE_, CTX)(CTX *_in, uint8_t* buf, int* n) {                             \
+    memcpy(_in, buf + *n, sizeof(CTX));                                                         \
     *n += sizeof(CTX);                                                                          \
 }
 #define SERIALIZE(CTX) PP_CONCAT(SERIALIZE_, CTX)
+#define DESERIALIZE(CTX) PP_CONCAT(DESERIALIZE_, CTX)
 
 #else
 
