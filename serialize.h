@@ -43,6 +43,8 @@ void PP_CONCAT(DESERIALIZE_, CTX)(CTX *_in, uint8_t* buf, int* n) {             
 #define SERIALIZE(CTX) PP_CONCAT(SERIALIZE_, CTX)
 #define DESERIALIZE(CTX) PP_CONCAT(DESERIALIZE_, CTX)
 
+SERIALIZE_OBJ_DEF(int);
+
 #else
 
 #include <string>
