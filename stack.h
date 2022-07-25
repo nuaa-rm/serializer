@@ -24,7 +24,8 @@ typedef enum {
     STACK_STATUS (*push)(STACK_S(CTX)* _in, CTX obj);                           \
     CTX (*pop)(STACK_S(CTX)* _in, int n);                                       \
     PP_IF(MACROMAGIC_SERIALIZE_H,                                               \
-        void (*serialize)(STACK_S(CTX)* _in, uint8_t* buf, int* n);,)           \
+        void (*serialize)(STACK_S(CTX)* _in, uint8_t* buf, int* n);             \
+        void (*deserialize)(STACK_S(CTX)* _in, uint8_t* buf, int* n);,)         \
 } STACK(CTX);                                                                   \
 void PP_CONCAT(STACK_DEINIT_, CTX)(STACK(CTX)* _in) {                           \
     free(_in->data);                                                            \
@@ -86,7 +87,8 @@ STACK(CTX) PP_CONCAT(STACK_INIT_, CTX)(int num) {                               
     t.push = &STACK_PUSH(CTX);                                                  \
     t.pop = &STACK_POP(CTX);                                                    \
     PP_IF(MACROMAGIC_SERIALIZE_H,                                               \
-        t.serialize = &PP_CONCAT(SERIALIZE_, STACK(CTX));,)                     \
+        t.serialize = &PP_CONCAT(SERIALIZE_, STACK(CTX));                       \
+        t.deserialize = &PP_CONCAT(DESERIALIZE_, STACK(CTX));,)                 \
     return t;                                                                   \
 }
 
