@@ -23,7 +23,7 @@ int main() {
     printf("%f\n", tt.pop(&tt, -1).b);
     tt.serialize(&tt, buf.data, &(buf.n));
     SERIALIZE(STACK(test))(&tt, buf.data, &(buf.n));
-//    tt.deinit(&tt);
+    tt.deinit(&tt);
     for (int i = 0; i < buf.n; i++) {
         printf("%.2x ", buf.data[i]);
     }
