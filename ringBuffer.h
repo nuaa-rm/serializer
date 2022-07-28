@@ -9,6 +9,8 @@
 typedef unsigned char uint8_t;
 #endif
 
+#define C_API_OOP_LIKE
+
 #ifdef __cplusplus
 #include <cstring>
 
@@ -149,60 +151,74 @@ public:
 #include <string.h>
 #include <stdlib.h>
 
-struct ringBuffer {
+struct ringBufferData {
     uint8_t* buffer;
     uint8_t* head;
     uint8_t* tail;
     int length;
-    int (*size)(struct ringBuffer* this);
-    int (*get)(struct ringBuffer* this, void* dst, const int size);
-    uint8_t (*get_char)(struct ringBuffer* this, const int index);
-    int (*pop)(struct ringBuffer* this, const int size);
-    int (*put)(struct ringBuffer* this, const void* src, const int size);
-    void (*deinit)(struct ringBuffer* this);
 };
-typedef struct ringBuffer* ringBuffer_t;
+
+struct ringBuffer {
+    struct ringBufferData* data;
+#ifdef C_API_OOP_LIKE
+    int (*size)(struct ringBuffer this);
+    int (*get)(struct ringBuffer this, void* dst, const int size);
+    uint8_t (*get_char)(struct ringBuffer this, const int index);
+    int (*pop)(struct ringBuffer this, const int size);
+    int (*put)(struct ringBuffer this, const void* src, const int size);
+    void (*deinit)(struct ringBuffer this);
+#endif
+};
+typedef struct ringBuffer ringBuffer_t;
 
 int rb_outOfSize(ringBuffer_t this) {
-    return this->tail < this->head;
+    return this.data->tail < this.data->head;
+}
+
+int rb_size(ringBuffer_t this) {
+    if (rb_outOfSize(this)) {
+        return this.data->length - (int)(this.data->head - this.data->tail) + 1;
+    } else {
+        return (int)(this.data->tail - this.data->head);
+    }
 }
 
 int rb_remainingSpace(ringBuffer_t this) {
-    return this->length - this->size(this);
+    return this.data->length - rb_size(this);
 }
 
 int rb_get(ringBuffer_t this, void* dst, const int size) {
-    if (size > this->size(this)) {
+    if (size > rb_size(this)) {
         return 0;
     }
     if (rb_outOfSize(this)) {
-        int head2size = this->length - (int)(this->head - this->buffer) + 1;
-        memcpy(dst, this->head, head2size);
-        memcpy((uint8_t*)dst + head2size, this->buffer, (int)(this->tail - this->buffer));
+        int head2size = this.data->length - (int)(this.data->head - this.data->buffer) + 1;
+        memcpy(dst, this.data->head, head2size);
+        memcpy((uint8_t*)dst + head2size, this.data->buffer, (int)(this.data->tail - this.data->buffer));
     } else {
-        memcpy(dst, this->head, (int)(this->tail - this->head));
+        memcpy(dst, this.data->head, (int)(this.data->tail - this.data->head));
     }
     return 1;
 }
 
-uint8_t rb_get_char(struct ringBuffer* this, const int index) {
-    int head2size = this->length - (int)(this->head - this->buffer);
+uint8_t rb_get_char(ringBuffer_t this, const int index) {
+    int head2size = this.data->length - (int)(this.data->head - this.data->buffer);
     if (index > head2size) {
-        return this->buffer[index - head2size];
+        return this.data->buffer[index - head2size];
     } else {
-        return this->buffer[index];
+        return this.data->buffer[index];
     }
 }
 
 int rb_pop(ringBuffer_t this, const int size) {
-    if (size > this->size(this)) {
+    if (size > rb_size(this)) {
         return 0;
     }
-    int head2size = this->length - (int)(this->head - this->buffer) + 1;
+    int head2size = this.data->length - (int)(this.data->head - this.data->buffer) + 1;
     if (size >= head2size) {
-        this->head = this->buffer + size - head2size;
+        this.data->head = this.data->buffer + size - head2size;
     } else {
-        this->head += size;
+        this.data->head += size;
     }
     return 1;
 }
@@ -211,46 +227,42 @@ int rb_put(ringBuffer_t this, const void* src, const int size) {
     if (size > rb_remainingSpace(this)) {
         return 0;
     }
-    int tail2size = this->length - (int)(this->tail - this->buffer) + 1;
+    int tail2size = this.data->length - (int)(this.data->tail - this.data->buffer) + 1;
     if (size > tail2size) {
-        memcpy(this->tail, src, tail2size);
-        memcpy(this->buffer, (uint8_t*)src + tail2size, size - tail2size);
-        this->tail = this->buffer + size - tail2size;
+        memcpy(this.data->tail, src, tail2size);
+        memcpy(this.data->buffer, (uint8_t*)src + tail2size, size - tail2size);
+        this.data->tail = this.data->buffer + size - tail2size;
     } else if (size == tail2size) {
-        memcpy(this->tail, src, tail2size);
-        this->tail = this->buffer;
+        memcpy(this.data->tail, src, tail2size);
+        this.data->tail = this.data->buffer;
     } else {
-        memcpy(this->tail, src, size);
-        this->tail += size;
+        memcpy(this.data->tail, src, size);
+        this.data->tail += size;
     }
     return 1;
 }
 
-int rb_size(ringBuffer_t this) {
-    if (rb_outOfSize(this)) {
-        return this->length - (int)(this->head - this->tail) + 1;
-    } else {
-        return (int)(this->tail - this->head);
-    }
-}
-
 void rb_deinit(ringBuffer_t this) {
-    free(this->buffer);
-    free(this);
+    free(this.data->buffer);
+    free(this.data);
+    this.data = NULL;
 }
 
 ringBuffer_t createRingBuffer(const int size) {
-    ringBuffer_t this = malloc(sizeof(struct ringBuffer));
-    this->length = size;
-    this->buffer = malloc(sizeof(uint8_t) * (size + 1));
-    this->head = this->buffer;
-    this->tail = this->buffer;
-    this->size = &rb_size;
-    this->get = &rb_get;
-    this->get_char = &rb_get_char;
-    this->pop = &rb_pop;
-    this->put = &rb_put;
-    this->deinit = &rb_deinit;
+    ringBuffer_t this;
+    this.data = malloc(sizeof(struct ringBufferData));
+    this.data->length = size;
+    this.data->buffer = malloc(sizeof(uint8_t) * (size + 1));
+    this.data->head = this.data->buffer;
+    this.data->tail = this.data->buffer;
+#ifdef C_API_OOP_LIKE
+    this.size = &rb_size;
+    this.get = &rb_get;
+    this.get_char = &rb_get_char;
+    this.pop = &rb_pop;
+    this.put = &rb_put;
+    this.deinit = &rb_deinit;
+#endif
     return this;
 }
 
