@@ -16,4 +16,6 @@ int main() {
     buf->put(buf, "1\0003", 4);
     buf->get(buf, output, 10);
     printf("%s\n", output);
+
+    buf->deinit(buf);
 }
