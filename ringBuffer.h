@@ -69,6 +69,15 @@ public:
         return true;
     }
 
+    uint8_t operator[](const int index) {
+        int head2size = length - int(head - buffer);
+        if (index > head2size) {
+            return buffer[index - head2size];
+        } else {
+            return buffer[index];
+        }
+    }
+
     bool pop(const int size) {
         if (size > this->size()) {
             return false;
@@ -147,6 +156,7 @@ struct ringBuffer {
     int length;
     int (*size)(struct ringBuffer* this);
     int (*get)(struct ringBuffer* this, void* dst, const int size);
+    uint8_t (*get_char)(struct ringBuffer* this, const int index);
     int (*pop)(struct ringBuffer* this, const int size);
     int (*put)(struct ringBuffer* this, const void* src, const int size);
     void (*deinit)(struct ringBuffer* this);
@@ -173,6 +183,15 @@ int rb_get(ringBuffer_t this, void* dst, const int size) {
         memcpy(dst, this->head, (int)(this->tail - this->head));
     }
     return 1;
+}
+
+uint8_t rb_get_char(struct ringBuffer* this, const int index) {
+    int head2size = this->length - (int)(this->head - this->buffer);
+    if (index > head2size) {
+        return this->buffer[index - head2size];
+    } else {
+        return this->buffer[index];
+    }
 }
 
 int rb_pop(ringBuffer_t this, const int size) {
@@ -228,6 +247,7 @@ ringBuffer_t createRingBuffer(const int size) {
     this->tail = this->buffer;
     this->size = &rb_size;
     this->get = &rb_get;
+    this->get_char = &rb_get_char;
     this->pop = &rb_pop;
     this->put = &rb_put;
     this->deinit = &rb_deinit;
